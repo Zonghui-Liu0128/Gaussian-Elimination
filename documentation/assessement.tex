@@ -1,0 +1,292 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{eurosym}
+\usepackage{graphicx}
+\usepackage{subfig}
+
+\newcommand{\rr}{\mathbb{R}}
+\newcommand{\rrn}{\mathbb{R}^{n}}
+\newcommand{\nn}{\mathbb{N}}
+\newcommand{\qq}{\mathbb{Q}}
+\newcommand{\zz}{\mathbb{Z}}
+\newcommand{\cc}{\mathbb{C}}
+\newcommand{\dd}{\mathrm{d}}
+
+\newenvironment{amatrix}[1]{%
+  \left(\begin{array}{@{}*{#1}{c}|c@{}}
+}{%
+  \end{array}\right)
+}
+
+\newenvironment{detmatrix}[1]{%
+  \left|\begin{array}{@{}*{#1}{c}}
+}{%
+  \end{array}\right|
+}
+
+    \makeatletter
+    \renewcommand*\env@matrix[1][*\c@MaxMatrixCols c]{%
+      \hskip -\arraycolsep
+      \let\@ifnextchar\new@ifnextchar
+      \array{#1}}
+    \makeatother
+    
+%definition for scalar product and norm
+\newcommand{\scal}[2]{\left\langle #1,#2 \right\rangle}
+\newcommand{\norm}[1]{\left\|#1\right\|}
+
+\newcommand{\Ra}{\Rightarrow}
+
+%definition of averages
+\newcommand{\averageh}[1]{\left\langle#1\right\rangle}
+\newcommand{\averaget}[1]{\overline{ #1}}
+
+%definition calculus
+\newcommand{\grad}{\operatorname{grad}}
+\renewcommand{\div}{\operatorname{div}}
+\newcommand{\rot}{\operatorname{rot}}
+
+\newcommand{\ig}[1]{\includegraphics[keepaspectratio=true, width=.7\textwidth]{#1}}
+\newcommand{\igw}[2]{\includegraphics[keepaspectratio=true, width=#2\textwidth]{#1}}
+
+
+\newtheorem{example}{Example}
+\newtheorem{definition}{Definition}
+\newtheorem{method}{Method}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+\begin{document}
+\begin{center}
+\LARGE{Modern Programming Methods 2021/22 - Assessment 3}\\
+\vspace{0.5cm}
+\LARGE{Testing, CI \& optimization}\\
+\end{center}
+\vspace{1.5cm}
+%
+This file contains instructions for completing the assignment. See the \newline
+README.md file located in the base folder of this repository for instructions
+regarding setting up the software.
+
+The assessment is based around testing, documentation and CI for a
+\href{https://en.wikipedia.org/wiki/Gaussian\_elimination}{Gaussian elimination} algorithm
+and then developing and optimising an algorithm for computing the determinant of matrices.
+\textit{\textbf{Note}} that you do not need to understand the details of how to implement
+a Gaussian elimination algorithm to complete this assignment, however you will need
+to understand how to multiply two matrices together and how to compute the
+\href{https://en.wikipedia.org/wiki/Determinant}{Determinant} of a square matrix.
+Both of these linear algebra operations are explained below before detailing the
+assessment.
+
+\section*{Matrix multiplication}
+
+Let $A$ be an $n \times m$ matrix and $B$ be an $m \times l$ matrix. We define the product of $A$ and $B$ as the dot product/scalar product of each row of the matrix $A$ with each column of the matrix $B$, that is
+\begin{equation}
+\begin{split}
+A \cdot B &:=\begin{pmatrix}
+a_{11} & a_{12} & \dots & a_{1m} \\
+a_{21} & a_{22} & \dots & a_{2m} \\
+\vdots &  \vdots & \dots &\vdots\\
+a_{n1} & a_{n2} & \dots & a_{nm} \\
+\end{pmatrix}\cdot
+\begin{pmatrix}
+b_{11} & b_{12} & \dots & b_{1l} \\
+b_{21} & b_{22} & \dots & b_{2l} \\
+\vdots &  \vdots & \dots &\vdots\\
+b_{m1} & b_{m2} & \dots & b_{ml} \\
+\end{pmatrix}
+\\ &:=
+\begin{pmatrix}
+\sum_{j=1}^m a_{1j}b_{j1} & \dots & \sum_{j=1}^m a_{1j}b_{jl} \\
+\sum_{j=1}^m a_{2j}b_{j1} & \dots & \sum_{j=1}^m a_{2j}b_{jl} \\
+\vdots & \dots & \vdots \\
+\sum_{j=1}^m a_{nj}b_{j1} & \dots & \sum_{j=1}^m a_{nj}b_{jl} \\
+\end{pmatrix}
+\end{split}
+\end{equation}
+and hence the result is an $n \times l$ matrix. A matrix is said to be square if $n = m$.
+
+\begin{example}
+$$
+\begin{pmatrix}
+1 & 2 \\
+3 & 4
+\end{pmatrix}
+\begin{pmatrix}
+5 \\ 6
+\end{pmatrix}
+=\begin{pmatrix}
+5 + 12 \\
+15 + 24 
+\end{pmatrix}
+=\begin{pmatrix}
+17\\39
+\end{pmatrix}
+$$
+\end{example}
+
+\begin{example}
+$$
+\begin{pmatrix}
+1 & 2 \\
+3 & 4
+\end{pmatrix}
+\begin{pmatrix}
+5 & 1 \\ 6 & 2
+\end{pmatrix}
+=\begin{pmatrix}
+5 + 12 & 1 + 4 \\
+15 + 24 & 3 + 8
+\end{pmatrix}
+=\begin{pmatrix}
+17 & 5 \\ 39 & 11
+\end{pmatrix}
+$$
+\end{example}
+
+\section*{Determinant}
+
+Consider an $n\times n$ matrix $A$. Furthermore, denote $B_{ij}$ the $(n-1)\times(n-1)$ matrix obtained from $A$ by removing the $i$-th row and the $j-th$ column. Then, it holds true that
+\begin{equation}
+\det(A) = \sum_{j=1}^{n} (-1)^{i+j} a_{ij} \det(B_{ij})
+\end{equation}
+for any fixed $i$ (row expansion), and
+\begin{equation}
+\det(A) = \sum_{i=1}^{n} (-1)^{i+j} a_{ij} \det(B_{ij}) 
+\end{equation}
+for any fixed $ j$ (column expansion).
+The term $(-1)^{i+j}$ can be found easily by thinking of a chessboard: 
+\begin{equation*}\begin{pmatrix}
++ & - & + & \hdots  \\
+- & + & - & \hdots \\
++& - & &  \\
+& &\ddots  & \vdots \\
+\hdots & \hdots &- &+ 
+\end{pmatrix}
+\end{equation*}
+By subsequent application, the computation of a determinant is broken down into a computation of many $2\times 2$ determinants. 
+\begin{example}
+\begin{equation*}
+\det\begin{pmatrix}
+2 & 3 & 7 & 9 \\
+0 & 0 & 2 & 4 \\
+0 & 1 & 5 & 0 \\
+0 & 0 & 0 & 3 
+\end{pmatrix}
+= 2\cdot \det\begin{pmatrix}
+0 & 2 & 4 \\ 1 & 5 & 0 \\0 & 0 & 3
+\end{pmatrix} = 2\cdot (-1) \cdot \det\begin{pmatrix}
+2 & 4 \\ 0 & 3
+\end{pmatrix}=2\cdot (-1) \cdot6=-12.
+\end{equation*}
+\end{example}
+Here we have chosen which row/column to expand to minimize our workload. This example demonstrates that Laplace's formula saves effort when expanding a row or column containing many zeros.
+
+\section*{Assessment}
+
+\begin{enumerate}
+\item The first part of the assessment will be to expand on the current testing suite and improve the
+documentation. The repository currently contains the following files/folders:
+\begin{itemize}
+ \item \texttt{docs}: Contains files for building \texttt{sphinx} documentation
+ \item \texttt{documentation}: Contains these assessment instructions. Should not be modified.
+ \item \texttt{mpm\_la}: Contains \texttt{gauss.py} which in turn contains the functions installed when setting up this package, \texttt{gauss}, \texttt{matmul} and \texttt{zeromat}.
+ \item \texttt{README.md}: Contains instructions for installing the initial package.
+ \item \texttt{environment.yml/requirements.txt}: For installation. See \texttt{README.md}.
+ \item \texttt{results}: Empty folder. Will be needed later.
+ \item \texttt{scripts}: Empty folder. Will be needed later.
+ \item \texttt{setup.py}: For installation purposes.
+ \item \texttt{tests}: Folder for placing all tests. Currently contains a single test for \texttt{gauss}.
+\end{itemize}
+Complete the following tasks:
+\begin{enumerate}
+ \item Add docstrings to the functions \texttt{matmul} and \texttt{zeromat}. Their format should
+ mirror that of \texttt{gauss} and they should both contain examples of their use.
+ \item Expand \texttt{test\_gauss} such that two (or more) additional sets of inputs are being tested.
+ These should be chosen such that a suitable range of inputs are tested.
+ \item To \texttt{test\_gauss.py}, add additional tests for \texttt{matmul} and \texttt{zeromat}.
+ (Note that you'll need to make these functions visible to the test file). Your tests
+ should make use of the parameterize decorator to test multiple inputs.
+ \item Next, add an additional file in tests called \newline
+ \texttt{test\_docstrings.py} that
+ tests the docstring tests in each of the three functions present in \texttt{gauss.py}.
+ \textbf{Important:} This file should be continuously updated to test the docstrings of any
+ new functions added later.
+ \item Finally for part 1, using \texttt{sphinx} and the files present in \texttt{docs/} build
+ the documentation. The final form of the documentation should be a pdf file named 
+ \texttt{mpm\_la.pdf} located in the \texttt{docs/} folder. Note, using \texttt{sphinx} you'll
+ first create html files and then these should be compiled into the pdf.
+ \textbf{This documentation
+ should also be continuously updated such that on submission it reflects the final state of your repository.}
+\end{enumerate}
+[35 marks]
+\item The next task is to add some CI in the form of Github Actions workflows. These workflows should
+be placed within the repository in the \texttt{.github/workflows} folder. \textbf{All workflows should
+be passing at the time of your final submission}. Some marks will be reserved for neatness and conciseness.
+\begin{enumerate}
+ \item Create a workflow that checks the repository is PEP8 compliant. The workflow should trigger when
+ (at the very least) a push is made the main branch.
+ \item Create a workflow that runs \texttt{pytest} on all test files present within the \texttt{tests/}
+ folder. The workflow should execute the tests on the following operating systems: (i) Ubuntu 20.04,
+ \& (ii) Windows Server 2019.
+ \item Create a workflow that creates an Anaconda environment from the \texttt{environment.yml} file
+ present in your repository and then executes \texttt{pytest} for all tests in the \texttt{tests} folder
+ as in part (b). This may be in a separate file or in the same \texttt{.yml} as that used for part (b).
+ \item Create a workflow that builds the latest version of your \texttt{sphinx} documentation and if
+ necessary commits and pushes it to your repository.
+\end{enumerate}
+[35 marks]
+\item If we simply wish to compute the determinant of a matrix (e.g. \texttt{det = gauss(A, I)}),
+clearly our current algorithm is not optimal, especially when the matrix becomes large
+(check for which sizes it becomes painfully slow!). Lets see how bad it is and if we can do better.
+\begin{enumerate}
+ \item Within the \texttt{scripts/} folder add a file called \texttt{det\_timings.py}. This script should,
+ for many ($\approx10$) square matrices of increasing size, record
+ the time taken by the \texttt{gauss} algorithm
+ to compute the determinant of these matrices. Additionally, for each of these matrices compute the time taken by
+ \texttt{numpy.linalg.det} to calculate the determinant. Timing results should be
+ written automatically by the script to a file named \texttt{timings.txt} (or \texttt{timings\_\textit{something}.txt})in the \texttt{results/} folder with the
+ formatting illustrated in Table \ref{timings_table}.
+ \item Add a new workflow that, using a single operating system of your choice, executes the
+ script \texttt{det\_timings.py}, commits the new results (i.e. the new \texttt{timings\_xxxx.txt} produced)
+ and pushes them to your github repository.
+ \item In the \texttt{mpm\_la} folder add a new file \texttt{det.py} that contains a function (that you will write) named
+ \texttt{det}. This function should be your own algorithm to compute \textit{only} the determinant
+ of a single square matrix that's passed to it. How does your implementation compare to that of \texttt{gauss}
+ and \texttt{numpy.linalg.det}? Have your script \texttt{det\_timings.py} also compute the timing of your
+ \texttt{det} algorithm and add your results as a third column in your timings file.
+\end{enumerate}
+[30 marks]
+\end{enumerate}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{ c c c }
+ 2 & 0.001 & 0.001 \\ 
+ 4 & 0.02 & 0.01 \\  
+ $\vdots$ & $\vdots$ & $\vdots$ \\
+ 100 & 5.0 & 1.0
+\end{tabular}
+\end{center}
+\caption{\label{timings_table}Example formatting of the results table. The first column represents
+the size of the matrix along one of its axes. The second column represents the corresponding timing
+in a suitable unit of the \texttt{gauss} algorithm and the final column that of \texttt{numpy.linalg.det}.}
+\end{table}
+
+Notes:
+\begin{itemize}
+ \item Any new function or test should follow the same standards as those implemented in part 1.
+ \item Remember to ensure that the final version of your repository is \texttt{PEP8} compliant.
+ \item Keep the sphinx documentation up to data.
+ \item Additionally, ensure that your \texttt{environment.yml} and \texttt{requirements.txt} files have been updated
+ appropriately to reflect any new dependencies you've added.
+ \item For part 3(b) you have have your script and workflow overwrite the existing
+ \texttt{timings.txt} file \textit{or} create a new file of the form
+ \texttt{timings\_\textit{\{some identifier\}}.txt} and commit that upon each execution. If you choose the
+ later format, can you think of a simple regression test you could add?
+\end{itemize}
+
+\end{document}

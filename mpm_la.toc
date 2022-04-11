@@ -1,0 +1,4 @@
+\babel@toc {english}{}
+\contentsline {chapter}{\numberline {1}A Gaussian Elimination routine}{1}{chapter.1}%
+\contentsline {chapter}{\numberline {2}Another Algorithm to Compute the Determinant}{5}{chapter.2}%
+\contentsline {chapter}{Python Module Index}{7}{section*.7}%
